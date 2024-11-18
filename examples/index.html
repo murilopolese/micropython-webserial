@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title>MicroPython WebSerial Examples</title>
     <link rel="stylesheet" href="main.css">
+    <script src="FileSaver.js" charset="utf-8"></script>
   </head>
   <body>
     <h1>Examples</h1>
@@ -29,13 +30,14 @@
     <script type="module">
       import { MicroPython } from '../micropython-webserial.js'
       const board = new MicroPython()
+      const status = document.querySelector('#connection .status')
       document.querySelector('#connection .connect').addEventListener('click', async () => {
         await board.connect()
-        document.querySelector('#connection .status').innerHTML = "Connected"
+        status.innerHTML = "Connected"
       })
       document.querySelector('#connection .disconnect').addEventListener('click', async () => {
         await board.disconnect()
-        document.body.children.connection.children.status.innerHTML = "Disconnected"
+        status.innerHTML = "Disconnected"
       })
     </script>
 
@@ -151,5 +153,241 @@ for i in range(0, 10):
       })
     </script>
 
+    <h2>Folder operations</h2>
+    <div id="folders">
+      <button class="connect">Connect</button>
+      <button class="disconnect">Disconnect</button>
+      <div class="status">Disconnected</div>
+      <div>
+        <p>Create folder</p>
+        <input class="create" placeholder="folder name" />
+      </div>
+      <div>
+        <p>Remove folder</p>
+        <input class="remove" placeholder="folder name" />
+      </div>
+      <div>
+        <p>Rename folder</p>
+        <input class="oldPath" placeholder="old name" />
+        <input class="newPath" placeholder="new name" />
+        <button class="rename">Rename</button>
+      </div>
+      <pre class="output">Output</pre>
+    </div>
+    <script type="module">
+      import { MicroPython } from '../micropython-webserial.js'
+      const board = new MicroPython()
+      const status = document.querySelector('#folders .status')
+      const output = document.querySelector('#folders .output')
+      const create = document.querySelector('#folders .create')
+      const remove = document.querySelector('#folders .remove')
+      const oldPath = document.querySelector('#folders .oldPath')
+      const newPath = document.querySelector('#folders .newPath')
+      const rename = document.querySelector('#folders .rename')
+      document.querySelector('#folders .connect').addEventListener('click', async () => {
+        await board.connect()
+        status.innerHTML = "Connected"
+        output.innerHTML = JSON.stringify(await board.listFiles(), null, 2)
+      })
+      document.querySelector('#folders .disconnect').addEventListener('click', async () => {
+        await board.disconnect()
+        status.innerHTML = "Disconnected"
+      })
+      create.addEventListener('change', async (e) => {
+        if (e.target.value.trim() == '') return
+        const ok = confirm(`Are you sure you want to create the folder ${e.target.value}?`)
+        if (ok) {
+          await board.createFolder(e.target.value)
+          output.innerHTML = JSON.stringify(await board.listFiles(), null, 2)
+          e.target.value = ''
+        }
+      })
+      remove.addEventListener('change', async (e) => {
+        if (e.target.value.trim() == '') return
+        const ok = confirm(`Are you sure you want to remove the folder ${e.target.value}?`)
+        if (ok) {
+          await board.removeFolder(e.target.value)
+          output.innerHTML = JSON.stringify(await board.listFiles(), null, 2)
+          e.target.value = ''
+        }
+      })
+      rename.addEventListener('click', async () => {
+        const ok = confirm(`Are you sure you want to rename the folder ${oldPath.value} to ${newPath.value}?`)
+        if (ok) {
+          await board.renameItem(oldPath.value, newPath.value)
+          output.innerHTML = JSON.stringify(await board.listFiles(), null, 2)
+          oldPath.value = ''
+          newPath.value = ''
+        }
+      })
+    </script>
+
+    <h2>File operations</h2>
+    <div id="files">
+      <button class="connect">Connect</button>
+      <button class="disconnect">Disconnect</button>
+      <div class="status">Disconnected</div>
+      <div>
+        <p>Create file</p>
+        <input class="create" placeholder="file name"/>
+      </div>
+      <div>
+        <p>Load file</p>
+        <input class="load" placeholder="file name"/>
+      </div>
+      <div>
+        <p>Save file</p>
+        <div>
+          <input class="saveName" placeholder="file name"/>
+        </div>
+        <br>
+        <div>
+          <textarea rows="5" cols="80" class="saveContent"># File content</textarea>
+        </div>
+        <button class="save">Save</button>
+      </div>
+      <div>
+        <p>Remove file</p>
+        <input class="remove" placeholder="file name"/>
+      </div>
+      <div>
+        <p>Rename file</p>
+        <input class="oldPath" placeholder="old name"/>
+        <input class="newPath" placeholder="new name"/>
+        <button class="rename">Rename</button>
+      </div>
+      <pre class="output">Output</pre>
+    </div>
+    <script type="module">
+      import { MicroPython } from '../micropython-webserial.js'
+      const board = new MicroPython()
+      const status = document.querySelector('#files .status')
+      const output = document.querySelector('#files .output')
+      const create = document.querySelector('#files .create')
+      const load = document.querySelector('#files .load')
+      const save = document.querySelector('#files .save')
+      const saveName = document.querySelector('#files .saveName')
+      const saveContent = document.querySelector('#files .saveContent')
+      const remove = document.querySelector('#files .remove')
+      const oldPath = document.querySelector('#files .oldPath')
+      const newPath = document.querySelector('#files .newPath')
+      const rename = document.querySelector('#files .rename')
+      document.querySelector('#files .connect').addEventListener('click', async () => {
+        await board.connect()
+        status.innerHTML = "Connected"
+        output.innerHTML = JSON.stringify(await board.listFiles(), null, 2)
+      })
+      document.querySelector('#files .disconnect').addEventListener('click', async () => {
+        await board.disconnect()
+        status.innerHTML = "Disconnected"
+      })
+      create.addEventListener('change', async (e) => {
+        if (e.target.value.trim() == '') return
+        const ok = confirm(`Are you sure you want to create the file ${e.target.value}?`)
+        if (ok) {
+          await board.createFile(e.target.value)
+          output.innerHTML = JSON.stringify(await board.listFiles(), null, 2)
+          e.target.value = ''
+        }
+      })
+      load.addEventListener('change', async (e) => {
+        const file = await board.loadFile(e.target.value)
+        output.innerHTML = file
+        e.target.value = ''
+      })
+      save.addEventListener('click', async () => {
+        if (saveName.value.trim() == '') return
+        const ok = confirm(`Are you sure you want to save the file ${saveName.value}?`)
+        if (ok) {
+          await board.saveFile(saveName.value, saveContent.value)
+          const file = await board.loadFile(saveName.value)
+          output.innerHTML = file
+        }
+      })
+      remove.addEventListener('change', async (e) => {
+        if (e.target.value.trim() == '') return
+        const ok = confirm(`Are you sure you want to remove the file ${e.target.value}?`)
+        if (ok) {
+          await board.removeFile(e.target.value)
+          output.innerHTML = JSON.stringify(await board.listFiles(), null, 2)
+          e.target.value = ''
+        }
+      })
+      rename.addEventListener('click', async () => {
+        const ok = confirm(`Are you sure you want to rename the file ${oldPath.value} to ${newPath.value}?`)
+        if (ok) {
+          await board.renameItem(oldPath.value, newPath.value)
+          output.innerHTML = JSON.stringify(await board.listFiles(), null, 2)
+          oldPath.value = ''
+          newPath.value = ''
+        }
+      })
+    </script>
+
+    <!--
+    <h2>File transfer</h2>
+    <div id="transfer">
+      <button class="connect">Connect</button>
+      <button class="disconnect">Disconnect</button>
+      <div class="status">Disconnected</div>
+      <div>
+        <p>Download file</p>
+        <input class="download" placeholder="file name" />
+      </div>
+      <div>
+        <p>Upload folder</p>
+        <input type="file" class="upload" />
+      </div>
+      <pre class="output">Output</pre>
+    </div>
+    <script type="module">
+      import { MicroPython } from '../micropython-webserial.js'
+      import { base64ToUint8Array } from '../util.js'
+      const board = new MicroPython()
+      const status = document.querySelector('#transfer .status')
+      const output = document.querySelector('#transfer .output')
+      const download = document.querySelector('#transfer .download')
+      const upload = document.querySelector('#transfer .upload')
+      document.querySelector('#transfer .connect').addEventListener('click', async () => {
+        await board.connect()
+        status.innerHTML = "Connected"
+        output.innerHTML = JSON.stringify(await board.listFiles(), null, 2)
+      })
+      document.querySelector('#transfer .disconnect').addEventListener('click', async () => {
+        await board.disconnect()
+        status.innerHTML = "Disconnected"
+      })
+      download.addEventListener('change', async (e) => {
+        if (e.target.value.trim() == '') return
+        const ok = confirm(`Are you sure you want to download the file ${e.target.value}?`)
+        if (ok) {
+          const fileContent = await board.downloadFile(e.target.value)
+          const buffer = base64ToUint8Array(fileContent)
+          const blob = new Blob([buffer])
+          saveAs(blob, e.target.value)
+          e.target.value = ''
+        }
+      })
+      upload.addEventListener('change', async (e) => {
+        if (e.target.files.length == 0) return
+        const file = e.target.files[0]
+        const ok = confirm(`Are you sure you want to upload the file ${file.name}?`)
+        if (ok) {
+          const reader = new FileReader()
+          reader.addEventListener('load', async () => {
+            // Creating file
+            const decoder = new TextDecoder()
+            let content = decoder.decode(reader.result)
+            // Transfer file to the board
+            await board.uploadFile(file.name, content)
+            output.innerHTML = content
+            e.target.value = ''
+          })
+          reader.readAsArrayBuffer(file)
+        }
+      })
+
+    </script>
+    -->
   </body>
 </html>

@@ -154,8 +154,8 @@ export class MicroPython extends EventEmitter {
     await this.exitRawRepl()
     return out
   }
-
-  async listFiles(path) {
+  async listFiles() {
+    // List all files recursively
     await this.runHelper()
     await this.enterRawRepl()
     const out = await this.executeRaw(`print(json.dumps(get_all_files("")))`)
@@ -194,17 +194,91 @@ export class MicroPython extends EventEmitter {
     })
     return tree
   }
+  async createFolder(path) {
+    await this.getPrompt()
+    await this.enterRawRepl()
+    let command = `import os;os.mkdir('${path}')`
+    await this.executeRaw(command)
+    await this.exitRawRepl()
+  }
+  async removeFolder(path) {
+    await this.getPrompt()
+    await this.runHelper()
+    await this.enterRawRepl()
+    await this.executeRaw(`delete_folder('${path}')`)
+    await this.exitRawRepl()
+  }
+  async renameItem(oldPath, newPath) {
+    await this.getPrompt()
+    await this.enterRawRepl()
+    let command = `import os;os.rename('${oldPath}','${newPath}')`
+    await this.executeRaw(command)
+    await this.exitRawRepl()
+  }
+  async createFile(path) {
+    await this.getPrompt()
+    await this.enterRawRepl()
+    let command = `f=open('${path}', 'w');f.close()`
+    await this.executeRaw(command)
+    await this.exitRawRepl()
+  }
+  async saveFile(path, content) {
+    // Content is a string
+    await this.getPrompt()
+    await this.enterRawRepl()
+    await this.executeRaw(`f=open('${path}','wb')\nw=f.write`)
+    const d = new TextEncoder().encode(content)
+    await this.executeRaw(`w(bytes([${d}]))`)
+    await this.executeRaw(`f.close()`)
+    await this.exitRawRepl()
+  }
+  async removeFile(path) {
+    await this.getPrompt()
+    await this.enterRawRepl()
+    let command = `import uos\n`
+        command += `try:\n`
+        command += `  uos.remove("${path}")\n`
+        command += `except OSError:\n`
+        command += `  print(0)\n`
+    await this.executeRaw(command)
+    await this.exitRawRepl()
+  }
+  async loadFile(path) {
+    await this.getPrompt()
+    await this.enterRawRepl()
+    let output = await this.executeRaw(
+      `with open('${path}','r') as f:\n while 1:\n  b=f.read(256)\n  if not b:break\n  print(b,end='')`
+    )
+    await this.exitRawRepl()
+    return extract(output)
+  }
 
-  createFolder(path) {}
-  removeFolder(path) {}
-  renameFolder(oldPath, newPath) {}
-
-  createFile(path, content) {}
-  saveFile(path, content) {}
-  removeFile(path) {}
-  renameFile(oldPath, newPath) {}
-
-  downloadFile(source, destination) {}
-  uploadFile(source, destination) {}
+  async downloadFile(source) {
+    await this.getPrompt()
+    await this.runHelper()
+    await this.enterRawRepl()
+    const output = await this.executeRaw(
+`with open('${source}','rb') as f:
+  b = b2a_base64(f.read())
+  for i in b:
+    print( chr(i), end='' )
+`
+    )
+    await this.exitRawRepl()
+    return extract(output)
+  }
+  async uploadFile(path, content) {
+    // Content is a typed array
+    await this.getPrompt()
+    await this.enterRawRepl()
+    await this.executeRaw(`f=open('${path}','wb')\nw=f.write`)
+    for (let i = 0; i < content.byteLength; i += 128) {
+      const c = new Uint8Array(content.slice(i, i+128))
+      await this.executeRaw(`w(bytes([${c}]))`)
+    }
+    await this.executeRaw(`f.close()`)
+    await this.exitRawRepl()
+    return Promise.resolve()
+  }
 
 }
