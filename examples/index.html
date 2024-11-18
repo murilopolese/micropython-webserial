@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>MicroPython WebSerial Examples</title>
+    <link rel="stylesheet" href="main.css">
+  </head>
+  <body>
+    <h1>Examples</h1>
+
+    <h2>Feature Detection</h2>
+    <div id="featureDetection"></div>
+    <script type="module">
+      import { MicroPython } from '../micropython-webserial.js'
+      try {
+        const board = new MicroPython()
+        document.querySelector('#featureDetection').innerHTML = `<p>Supported browser</p>`
+      } catch(e) {
+        document.querySelector('#featureDetection').innerHTML = `<p>Unsupported browser</p>`
+      }
+    </script>
+
+    <h2>Connection</h2>
+    <div id="connection">
+      <button class="connect">Connect</button>
+      <button class="disconnect">Disconnect</button>
+      <div class="status">Disconnected</div>
+    </div>
+    <script type="module">
+      import { MicroPython } from '../micropython-webserial.js'
+      const board = new MicroPython()
+      document.querySelector('#connection .connect').addEventListener('click', async () => {
+        await board.connect()
+        document.querySelector('#connection .status').innerHTML = "Connected"
+      })
+      document.querySelector('#connection .disconnect').addEventListener('click', async () => {
+        await board.disconnect()
+        document.body.children.connection.children.status.innerHTML = "Disconnected"
+      })
+    </script>
+
+    <h2>Read and write</h2>
+    <div id="readAndWrite">
+      <button class="connect">Connect</button>
+      <button class="disconnect">Disconnect</button>
+      <div class="status">Disconnected</div>
+      <input class="input" />
+      <pre class="output">Output</pre>
+    </div>
+    <script type="module">
+      import { MicroPython } from '../micropython-webserial.js'
+      const board = new MicroPython()
+      document.querySelector('#readAndWrite .connect').addEventListener('click', async () => {
+        await board.connect()
+        const status = document.querySelector('#readAndWrite .status')
+        const output = document.querySelector('#readAndWrite .output')
+        status.innerHTML = "Connected"
+        board.on('data', async (buffer) => {
+          const data = (new TextDecoder()).decode(buffer)
+          output.innerHTML += data
+        })
+        await board.getPrompt()
+      })
+      document.querySelector('#readAndWrite .disconnect').addEventListener('click', async () => {
+        await board.disconnect()
+        document.querySelector('#readAndWrite .status').innerHTML = "Disconnected"
+      })
+      document.querySelector('#readAndWrite .input').addEventListener('change', async (e) => {
+        await board.getPrompt()
+        board.write(e.target.value + `\r`)
+        e.target.value = ''
+      })
+    </script>
+
+    <h2>Run</h2>
+    <div id="run">
+      <button class="connect">Connect</button>
+      <button class="disconnect">Disconnect</button>
+      <div class="status">Disconnected</div>
+      <div>
+        <textarea rows="5" cols="80" class="input">from time import sleep
+for i in range(0, 10):
+  print('.')
+  sleep(1)
+        </textarea>
+      </div>
+      <button class="run">Run</button>
+      <button class="stop">Stop</button>
+      <button class="reset">Reset</button>
+      <pre class="output">Output</pre>
+    </div>
+    <script type="module">
+      import { MicroPython } from '../micropython-webserial.js'
+      const board = new MicroPython()
+      const status = document.querySelector('#run .status')
+      const input = document.querySelector('#run .input')
+      const output = document.querySelector('#run .output')
+      document.querySelector('#run .connect').addEventListener('click', async () => {
+        await board.connect()
+        status.innerHTML = "Connected"
+        board.on('data', async (buffer) => {
+          const data = (new TextDecoder()).decode(buffer)
+          output.innerHTML += data
+        })
+        await board.getPrompt()
+      })
+      document.querySelector('#run .disconnect').addEventListener('click', async () => {
+        await board.disconnect()
+        status.innerHTML = "Disconnected"
+      })
+      document.querySelector('#run .run').addEventListener('click', async (e) => {
+        const code = input.value
+        await board.getPrompt()
+        await board.run(code)
+      })
+      document.querySelector('#run .stop').addEventListener('click', async (e) => {
+        await board.getPrompt()
+      })
+      document.querySelector('#run .reset').addEventListener('click', async (e) => {
+        output.innerHTML = ''
+        await board.softReset()
+      })
+    </script>
+
+    <h2>List files recursively</h2>
+    <div id="listFiles">
+      <button class="connect">Connect</button>
+      <button class="disconnect">Disconnect</button>
+      <div class="status">Disconnected</div>
+      <button class="list">List all files</button>
+      <pre class="output">Output</pre>
+    </div>
+    <script type="module">
+      import { MicroPython } from '../micropython-webserial.js'
+      const board = new MicroPython()
+      const status = document.querySelector('#listFiles .status')
+      const output = document.querySelector('#listFiles .output')
+      document.querySelector('#listFiles .connect').addEventListener('click', async () => {
+        await board.connect()
+        status.innerHTML = "Connected"
+        await board.getPrompt()
+      })
+      document.querySelector('#listFiles .disconnect').addEventListener('click', async () => {
+        await board.disconnect()
+        status.innerHTML = "Disconnected"
+      })
+      document.querySelector('#listFiles .list').addEventListener('click', async (e) => {
+        await board.getPrompt()
+        const files = await board.listFiles('./')
+        output.innerHTML = JSON.stringify(files, null, 2)
+      })
+    </script>
+
+  </body>
+</html>
