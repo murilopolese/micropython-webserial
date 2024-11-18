@@ -60,7 +60,7 @@ export class MicroPython extends EventEmitter {
       this.writer = port.writable.getWriter()
 
       this.#readForeverAndReport()
-      this.on('data', data => this.#onData(data))
+      this.on('data', this.#onData)
 
       return Promise.resolve(port)
     } else {
@@ -72,6 +72,7 @@ export class MicroPython extends EventEmitter {
     this.reader.releaseLock()
     await this.port.close()
     this.isConnected = false
+    this.removeListener('data', this.#onData)
   }
   async write(str) {
     const textEncoder = new TextEncoder()
