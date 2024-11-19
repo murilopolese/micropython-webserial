@@ -8,7 +8,6 @@ export class MicroPython extends EventEmitter {
     if (!('serial' in navigator)) {
       throw new Error("Browser not supported")
     }
-
     this.port = null
     this.baudRate = 115200
     this.isConnected = false
@@ -19,7 +18,6 @@ export class MicroPython extends EventEmitter {
     this.resolveReadingUntilPromise = () => false
     this.rejectReadingUntilPromise = () => false
   }
-
   async #readForeverAndReport() {
     try {
       while (true) {
@@ -37,7 +35,6 @@ export class MicroPython extends EventEmitter {
       // TODO: Handle non-fatal read error.
     }
   }
-
   #onData(buffer) {
     if (this.readingUntil != null) {
       this.readingBuffer += (new TextDecoder()).decode(buffer)
@@ -49,7 +46,6 @@ export class MicroPython extends EventEmitter {
       }
     }
   }
-
   async connect() {
     const port = await navigator.serial.requestPort()
     if (port) {
@@ -267,7 +263,8 @@ export class MicroPython extends EventEmitter {
     await this.exitRawRepl()
     return extract(output)
   }
-  async uploadFile(path, content) {
+  async uploadFile(path, content, reporter) {
+    reporter = reporter || function() { return false }
     // Content is a typed array
     await this.getPrompt()
     await this.enterRawRepl()
@@ -275,6 +272,7 @@ export class MicroPython extends EventEmitter {
     for (let i = 0; i < content.byteLength; i += 128) {
       const c = new Uint8Array(content.slice(i, i+128))
       await this.executeRaw(`w(bytes([${c}]))`)
+      reporter( parseInt( (i/content.byteLength)*100 ) + '%' )
     }
     await this.executeRaw(`f.close()`)
     await this.exitRawRepl()
