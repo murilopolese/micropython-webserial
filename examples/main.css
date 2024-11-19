@@ -11,6 +11,8 @@ html {
 body {
   margin: 0 auto;
   max-width: 720px;
+  width: 100%;
+  padding: 0 2em;
 }
 
 .output {
@@ -23,4 +25,10 @@ body {
 
 .status {
   padding: 1em 0;
+}
+
+input,
+button,
+textarea {
+  width: 100%;
 }
